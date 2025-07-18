@@ -2,104 +2,80 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import os
 
-def load_excel_file():
-    file_path = input("Enter the path to your Excel file (.xlsx): ").strip()
-    if not os.path.exists(file_path):
-        print("File not found. Please check the path.")
-        return None
+def tampilkan_kolom(df):
+    print("\nKolom yang tersedia:")
+    for i, col in enumerate(df.columns):
+        print(f"{i + 1}. {col}")
+    return df.columns
 
-    try:
-        xls = pd.ExcelFile(file_path)
-        print("\nAvailable sheets:", xls.sheet_names)
-        sheet_name = input("Enter sheet name to load: ").strip()
-        df = pd.read_excel(xls, sheet_name=sheet_name)
-        print("Data loaded successfully.\n")
-        print("Columns found:", list(df.columns))
-        return df
-    except Exception as e:
-        print("Error reading Excel file:", e)
-        return None
-
-def select_columns(df, chart_type):
-    print("\nAvailable columns:")
-    for idx, col in enumerate(df.columns):
-        print(f"{idx+1}. {col}")
-
-    if chart_type in ['bar', 'line', 'histogram']:
-        x_col = input("Enter column name for X-axis: ").strip()
-        y_col = input("Enter column name for Y-axis: ").strip()
-        return x_col, y_col
-    elif chart_type == 'pie':
-        label_col = input("Enter column name for labels: ").strip()
-        value_col = input("Enter column name for values: ").strip()
-        return label_col, value_col
+def buat_diagram(df, x_col, y_col, chart_type):
+    if chart_type == "1":
+        df.groupby(x_col)[y_col].sum().plot(kind='bar')
+        plt.title("Diagram Batang")
+    elif chart_type == "2":
+        df.groupby(x_col)[y_col].sum().plot(kind='pie', autopct='%1.1f%%')
+        plt.title("Diagram Lingkaran")
+        plt.ylabel("")  # Hilangkan label Y
+    elif chart_type == "3":
+        df[y_col].plot(kind='hist', bins=20)
+        plt.title("Histogram")
+    elif chart_type == "4":
+        df.sort_values(by=x_col).plot(x=x_col, y=y_col, kind='line')
+        plt.title("Diagram Garis")
     else:
-        return None, None
+        print("Jenis diagram tidak dikenali.")
+        return
 
-def create_chart(df, chart_type, col1, col2):
-    plt.figure(figsize=(10,6))
-    title = f"{chart_type.title()} Chart of {col2} vs {col1}"
-
-    try:
-        if chart_type == 'bar':
-            plt.bar(df[col1], df[col2])
-            plt.xlabel(col1)
-            plt.ylabel(col2)
-        elif chart_type == 'line':
-            plt.plot(df[col1], df[col2], marker='o')
-            plt.xlabel(col1)
-            plt.ylabel(col2)
-        elif chart_type == 'histogram':
-            plt.hist(df[col2], bins=30)
-            plt.xlabel(col2)
-            plt.ylabel("Frequency")
-        elif chart_type == 'pie':
-            plt.pie(df[col2], labels=df[col1], autopct='%1.1f%%', startangle=140)
-            plt.axis('equal')
-        else:
-            print("Unsupported chart type.")
-            return
-
-        plt.title(title)
-        plt.tight_layout()
-        file_name = f"{chart_type}_chart.png"
-        plt.savefig(file_name)
-        plt.show()
-        print(f"Chart saved as: {file_name}")
-    except Exception as e:
-        print("Failed to generate chart:", e)
+    plt.xlabel(x_col)
+    plt.ylabel(y_col)
+    plt.tight_layout()
+    plt.show()
 
 def main():
-    print("=== Office Chart Generator ===")
-    df = load_excel_file()
-    if df is None:
-        return
+    while True:
+        print("\n=== Program Visualisasi Data Excel ===")
+        file_path = input("Masukkan path file Excel (misalnya: data.xlsx): ").strip()
 
-    print("\nSelect Chart Type:")
-    print("1. Bar")
-    print("2. Line")
-    print("3. Pie")
-    print("4. Histogram")
-    choice = input("Enter chart type number: ").strip()
+        if not os.path.exists(file_path):
+            print("File tidak ditemukan. Coba lagi.")
+            continue
 
-    chart_map = {
-        "1": "bar",
-        "2": "line",
-        "3": "pie",
-        "4": "histogram"
-    }
+        try:
+            df = pd.read_excel(file_path)
+        except Exception as e:
+            print("Gagal membaca file:", e)
+            continue
 
-    chart_type = chart_map.get(choice)
-    if not chart_type:
-        print("Invalid chart type.")
-        return
+        # Tampilkan kolom
+        kolom = tampilkan_kolom(df)
 
-    col1, col2 = select_columns(df, chart_type)
-    if col1 not in df.columns or col2 not in df.columns:
-        print("Invalid column names.")
-        return
+        # Input kolom X dan Y
+        try:
+            x_index = int(input("Masukkan nomor kolom untuk sumbu X: ")) - 1
+            y_index = int(input("Masukkan nomor kolom untuk sumbu Y: ")) - 1
+            x_col = kolom[x_index]
+            y_col = kolom[y_index]
+        except:
+            print("Input kolom tidak valid.")
+            continue
 
-    create_chart(df, chart_type, col1, col2)
+        # Pilih jenis diagram
+        print("\nPilih jenis diagram:")
+        print("1. Diagram Batang (Bar Chart)")
+        print("2. Diagram Lingkaran (Pie Chart)")
+        print("3. Histogram")
+        print("4. Diagram Garis (Line Chart)")
+        chart_type = input("Masukkan nomor jenis diagram: ")
+
+        try:
+            buat_diagram(df, x_col, y_col, chart_type)
+        except Exception as e:
+            print("Gagal membuat diagram:", e)
+
+        # Apakah ingin ulang?
+        ulang = input("\nIngin memproses file lain? (y/n): ").lower()
+        if ulang != 'y':
+            break
 
 if __name__ == "__main__":
     main()
